@@ -16,6 +16,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.support.SpringBootServletInitializer;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import com.google.gson.Gson;
 import com.ibm.insite.kafkaetlprocessor.dataobject.KafkaInputOrderMessage;
@@ -25,6 +26,7 @@ import com.ibm.insite.kafkaetlprocessor.repository.ResultStatsRepository;
 import scala.Tuple2;
 
 @SpringBootApplication
+@EnableJpaRepositories
 public class SparkDataProcessorApplication extends SpringBootServletInitializer implements CommandLineRunner {
 
 	@Autowired
@@ -67,27 +69,42 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 		conf.set("spark.streaming.stopGracefullyOnShutdown", "true");
 
 		JavaSparkContext sc = new JavaSparkContext(conf);
-		JavaRDD<String> data = sc.textFile("file:///C:/EclipseWorkSpaces/KafkaSparkStreamingOutput/*");
 
-		JavaRDD<KafkaInputOrderMessage> resultRecords = data.map(line -> {
-			Gson objGson = new Gson();
-			KafkaInputOrderMessage rd = objGson.fromJson(line, KafkaInputOrderMessage.class);
-			return rd;
-		});
+		while (true) {
+			JavaRDD<String> data = sc.textFile("file:///C:/EclipseWorkSpaces/KafkaSparkStreamingOutput/*");
 
-		JavaPairRDD<String, Integer> rddBrandCount = resultRecords
-				.mapToPair(e -> new Tuple2<String, Integer>(e.getProductbrand(), 1));
+			JavaRDD<KafkaInputOrderMessage> resultRecords = data.map(line -> {
+				Gson objGson = new Gson();
+				KafkaInputOrderMessage rd = objGson.fromJson(line, KafkaInputOrderMessage.class);
+				return rd;
+			});
 
-		JavaPairRDD<String, Integer> rddGroupByKeyResult = rddBrandCount.reduceByKey((a, b) -> a + b);
-		Map<String, Integer> resultMap = rddGroupByKeyResult.collectAsMap();
-		System.out.println(resultMap);
+			JavaPairRDD<String, Integer> rddBrandCount = resultRecords
+					.mapToPair(e -> new Tuple2<String, Integer>(e.getProductbrand(), 1));
 
-		Iterator it = resultMap.entrySet().iterator();
-		while (it.hasNext()) {
-			Map.Entry pair = (Map.Entry) it.next();
-			String key = (String) pair.getKey();
-			Integer value = Integer.parseInt(pair.getValue().toString());
-			respository.save(new ResultStats(key, value));
+			JavaPairRDD<String, Integer> rddGroupByKeyResult = rddBrandCount.reduceByKey((a, b) -> a + b);
+			Map<String, Integer> resultMap = rddGroupByKeyResult.collectAsMap();
+			System.out.println(resultMap);
+
+			Iterator it = resultMap.entrySet().iterator();
+			while (it.hasNext()) {
+				Map.Entry pair = (Map.Entry) it.next();
+				String key = (String) pair.getKey();
+				Integer value = Integer.parseInt(pair.getValue().toString());
+
+				ResultStats rs = respository.findByProductbrand(key);
+				if (rs != null) {
+					rs.setNumberoforders(value);
+					System.out.println("Found: Updating: " + rs);
+				}
+				else {
+					rs = new ResultStats(key, value);
+					System.out.println("Not Found: Saving: " + rs);
+				}
+				respository.save(rs);
+			}
+			
+			Thread.sleep(1000 * 60);
 		}
 	}
 }

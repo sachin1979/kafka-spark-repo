@@ -4,6 +4,6 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.ibm.insite.kafkaetlprocessor.dataobject.ResultStats;
 
-public interface ResultStatsRepository extends CrudRepository<ResultStats, String> {
-
+public interface ResultStatsRepository extends CrudRepository<ResultStats, Integer> {
+	ResultStats findByProductbrand(String productbrand);
 }

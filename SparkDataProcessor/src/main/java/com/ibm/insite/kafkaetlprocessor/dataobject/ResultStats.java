@@ -1,22 +1,24 @@
 package com.ibm.insite.kafkaetlprocessor.dataobject;
 
-import java.io.Serializable;
-
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
-public class ResultStats implements Serializable {
+@Table(name = "resultstats")
+public class ResultStats {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.TABLE)
+	private Integer id;
+
+	@Column(name = "productbrand")
 	private String productbrand;
+
+	@Column(name = "numberoforders")
 	private Integer numberoforders;
 
 	public ResultStats(String productbrand, Integer numberoforders) {
@@ -44,9 +46,16 @@ public class ResultStats implements Serializable {
 	public ResultStats() {
 	}
 
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
 	@Override
 	public String toString() {
 		return "ResultStats [productbrand=" + productbrand + ", numberoforders=" + numberoforders + "]";
 	}
-
 }
