@@ -30,19 +30,16 @@ function fire_ajax_submit() {
         timeout: 600000,
         success: function (data) {
 
-            var json = "<pre>"
-                + JSON.stringify(data, null, 4) + "</pre>";
-            $('#feedback').html(json);
+            //var json = "<pre>" + JSON.stringify(data, null, 4) + "</pre>";
+            $('#feedback').html("<h3 style='color: green'>Order has been submitted successfully</h3>");
 
-            console.log("SUCCESS : ", data);
             $("#btn-order").prop("disabled", false);
 
         },
         error: function (e) {
 
-            var json = "<pre>"
-                + e.responseText + "</pre>";
-            $('#feedback').html(json);
+            //var json = "<pre>" + e.responseText + "</pre>";
+            $('#feedback').html("<h3 style='color: red'>There was some error while submitting the Order. Please try again at later time.</h3>");
 
             console.log("ERROR : ", e);
             $("#btn-order").prop("disabled", false);
