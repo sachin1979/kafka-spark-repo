@@ -25,6 +25,14 @@ import com.ibm.insite.kafkaetlprocessor.repository.ResultStatsRepository;
 
 import scala.Tuple2;
 
+/**
+ * Spark processing class which performs operation of extracting data from datawarehouse and generating intelligent data from it.
+ * It is using Spark Core RDD APIs in the following example but Spark SQL or Hive SQL can be used too.
+ * Spark SQL too under the hood, uses RDDs.
+ * 
+ * @author sw088d
+ *
+ */
 @SpringBootApplication
 @EnableJpaRepositories
 public class SparkDataProcessorApplication extends SpringBootServletInitializer implements CommandLineRunner {
@@ -46,29 +54,6 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 	public static void main(String[] args) {
 		SpringApplication.run(SparkDataProcessorApplication.class, args);
 	}
-
-	/**
-	 * This method provides an alternative solution using SPARK SQL for performing the same action.
-	 * @param arg0
-	 * @throws Exception
-	 */
-/*    public void alternativeMethodUnused(String... arg0) throws Exception {
-		System.setProperty("spark.sql.warehouse.dir", SPARK_SQL_WAREHOUSE_DIR);
-
-		final SparkSession sparkSession = SparkSession.builder().appName("HDFS ETL Processor").master("local[2]")
-				.getOrCreate();
-
-		while (true) {
-			final Dataset<Row> jsonDataFrame = sparkSession.read().json(HDFS_FOLDER_LOCATION);
-			jsonDataFrame.printSchema();
-
-			jsonDataFrame.createOrReplaceTempView("laptop");
-			sparkSession.sql("SELECT productbrand, count(*) as numberoforders FROM laptop group by productbrand")
-					.show();
-
-			Thread.sleep(1000 * 60);
-		}
-	}*/
 
 	@SuppressWarnings({ "resource" })
 	@Override
@@ -108,12 +93,12 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 				GroupByFields key = (GroupByFields) pair.getKey();
 				Integer value = Integer.parseInt(pair.getValue().toString());
 
-				ResultStats rs = respository.findByProductbrandAndProductname(key.productbrand, key.productname);
+				ResultStats rs = respository.findByProductbrandAndProductname(key.getProductbrand(), key.getProductname());
 				if (rs != null) {
 					rs.setNumberoforders(value);
 				}
 				else {
-					rs = new ResultStats(key.productbrand, key.productname, value);
+					rs = new ResultStats(key.getProductbrand(), key.getProductname(), value);
 				}
 				respository.save(rs);
 			}
@@ -124,15 +109,34 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 	}
 }
 
+/*
+ * Helper class. This class is not needed if we use Spark SQL.
+ */
 class GroupByFields implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	public String productbrand;
-	public String productname;
+	private String productbrand;
+	private String productname;
 	
 	public GroupByFields(String productbrand, String productname) {
 		super();
 		this.productbrand = productbrand;
+		this.productname = productname;
+	}
+
+	public String getProductbrand() {
+		return productbrand;
+	}
+
+	public void setProductbrand(String productbrand) {
+		this.productbrand = productbrand;
+	}
+
+	public String getProductname() {
+		return productname;
+	}
+
+	public void setProductname(String productname) {
 		this.productname = productname;
 	}
 
@@ -165,6 +169,5 @@ class GroupByFields implements Serializable {
 		} else if (!productname.equals(other.productname))
 			return false;
 		return true;
-	}
-	
+	}	
 }

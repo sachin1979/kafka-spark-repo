@@ -22,6 +22,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import kafka.serializer.StringDecoder;
 
+/**
+ * Spark Streaming class, which reads the data arriving on Kafka Topic partitions in parallel and saves the same on HDFS.
+ * As Spark Streaming has parallelism built-in, it becomes a naturally intuitive choice to read data from Kafka partitions.
+ * For the POC, I am using only 1 partition but in production, we will have multiple partitions for efficient processing.
+ *  
+ * @author sw088d
+ *
+ */
 @SpringBootApplication
 public class KafkaSparkStreamingReaderApplication implements CommandLineRunner {
 
