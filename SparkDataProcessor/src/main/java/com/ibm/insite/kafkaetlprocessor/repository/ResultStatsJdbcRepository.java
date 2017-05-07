@@ -15,7 +15,7 @@ public class ResultStatsJdbcRepository {
 
 	public List<ResultStats> findAll() {
 		List<ResultStats> result = jdbcTemplate.query("SELECT * FROM ResultStats",
-				(rs, rowNum) -> new ResultStats(rs.getString("productbrand"), rs.getInt("numberoforders")));
+				(rs, rowNum) -> new ResultStats(rs.getString("productbrand"), rs.getString("productname"), rs.getInt("numberoforders")));
 		return result;
 	}
 }

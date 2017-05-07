@@ -18,12 +18,16 @@ public class ResultStats {
 	@Column(name = "productbrand")
 	private String productbrand;
 
+	@Column(name = "productname")
+	private String productname;
+
 	@Column(name = "numberoforders")
 	private Integer numberoforders;
 
-	public ResultStats(String productbrand, Integer numberoforders) {
+	public ResultStats(String productbrand, String productname, Integer numberoforders) {
 		super();
 		this.productbrand = productbrand;
+		this.productname = productname;
 		this.numberoforders = numberoforders;
 	}
 
@@ -41,6 +45,14 @@ public class ResultStats {
 
 	public void setNumberoforders(Integer numberoforders) {
 		this.numberoforders = numberoforders;
+	}
+
+	public String getProductname() {
+		return productname;
+	}
+
+	public void setProductname(String productname) {
+		this.productname = productname;
 	}
 
 	public ResultStats() {

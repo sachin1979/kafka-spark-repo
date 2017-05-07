@@ -24,6 +24,7 @@
 			<thead>
 				<tr>
 					<th>Brand Name</th>
+					<th>Product Type</th>
 					<th>Total Purchased Quantity</th>
 				</tr>
 			</thead>
@@ -31,6 +32,7 @@
 				<c:forEach items="${result}" var="element">
 					<tr>
 						<td>${element.productbrand}</td>
+						<td>${element.productname}</td>
 						<td>${element.numberoforders}</td>
 					</tr>
 				</c:forEach>

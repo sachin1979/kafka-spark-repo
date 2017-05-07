@@ -1,5 +1,6 @@
 package com.ibm.insite.kafkaetlprocessor;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -91,28 +92,28 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 				return rd;
 			});
 
-			JavaPairRDD<String, Integer> rddBrandCount = resultRecords
-					.mapToPair(e -> new Tuple2<String, Integer>(e.getProductbrand(), 1));
+			JavaPairRDD<GroupByFields, Integer> rddBrandCount = resultRecords
+					.mapToPair(e -> new Tuple2<GroupByFields, Integer>(new GroupByFields(e.getProductbrand(), e.getProductname()), 1));
 
-			JavaPairRDD<String, Integer> rddGroupByKeyResult = rddBrandCount.reduceByKey((a, b) -> a + b);
-			Map<String, Integer> resultMap = rddGroupByKeyResult.collectAsMap();
+			JavaPairRDD<GroupByFields, Integer> rddGroupByKeyResult = rddBrandCount.reduceByKey((a, b) -> a + b);
+			Map<GroupByFields, Integer> resultMap = rddGroupByKeyResult.collectAsMap();
 			//END: Transform (T) the database read from HDFS
 
-			Iterator<Entry<String, Integer>> it = resultMap.entrySet().iterator();
+			Iterator<Entry<GroupByFields, Integer>> it = resultMap.entrySet().iterator();
 			
 			//START: Load (L) the transformed data into destination.
 			//Here I am saving the transformed result into H2 database. This H2 database is queried by the controller.
 			while (it.hasNext()) {
-				Entry<String, Integer> pair = it.next();
-				String key = (String) pair.getKey();
+				Entry<GroupByFields, Integer> pair = it.next();
+				GroupByFields key = (GroupByFields) pair.getKey();
 				Integer value = Integer.parseInt(pair.getValue().toString());
 
-				ResultStats rs = respository.findByProductbrand(key);
+				ResultStats rs = respository.findByProductbrandAndProductname(key.productbrand, key.productname);
 				if (rs != null) {
 					rs.setNumberoforders(value);
 				}
 				else {
-					rs = new ResultStats(key, value);
+					rs = new ResultStats(key.productbrand, key.productname, value);
 				}
 				respository.save(rs);
 			}
@@ -121,4 +122,49 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 			Thread.sleep(1000 * 60);
 		}
 	}
+}
+
+class GroupByFields implements Serializable {
+	private static final long serialVersionUID = 1L;
+
+	public String productbrand;
+	public String productname;
+	
+	public GroupByFields(String productbrand, String productname) {
+		super();
+		this.productbrand = productbrand;
+		this.productname = productname;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((productbrand == null) ? 0 : productbrand.hashCode());
+		result = prime * result + ((productname == null) ? 0 : productname.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		GroupByFields other = (GroupByFields) obj;
+		if (productbrand == null) {
+			if (other.productbrand != null)
+				return false;
+		} else if (!productbrand.equals(other.productbrand))
+			return false;
+		if (productname == null) {
+			if (other.productname != null)
+				return false;
+		} else if (!productname.equals(other.productname))
+			return false;
+		return true;
+	}
+	
 }
