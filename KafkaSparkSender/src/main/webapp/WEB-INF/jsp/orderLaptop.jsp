@@ -16,7 +16,7 @@
 	<nav class="navbar navbar-inverse">
 		<div class="container">
 			<div class="navbar-header">
-				<a class="navbar-brand" href="#">IBM Insight Kafka Sender</a>
+				<a class="navbar-brand" href="#" style="color: white">IBM Insight Kafka Sender</a>
 			</div>
 		</div>
 	</nav>
