@@ -31,7 +31,7 @@ public class KafkaSparkStreamingReaderApplication implements CommandLineRunner {
 	@Value("${topic.name.ibm.adopt}")
 	private String ibmAdoptTopic;
 
-	@Value("${output.file.base.location}")
+	@Value("${hdfs.folder.location}")
 	private String OUTPUT_FILE_BASE_LOCATION;
 
 	@Value("${output.filename.prefix}")
