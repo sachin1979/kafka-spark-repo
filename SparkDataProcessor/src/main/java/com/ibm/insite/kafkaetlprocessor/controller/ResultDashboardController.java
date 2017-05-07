@@ -22,15 +22,10 @@ public class ResultDashboardController {
 
 	@RequestMapping(value = { "/", "/dashboard" }, method = RequestMethod.GET)
 	public ModelAndView orderLaptop(HttpServletRequest request) throws JsonProcessingException {
-
 		List<ResultStats> resultList = respository.findAll();
-		for (ResultStats resultStats : resultList) {
-			System.out.println(resultStats.getProductbrand() + "##" + resultStats.getNumberoforders());
-		}
 
 		ModelAndView view = new ModelAndView("dashboard");
 		view.addObject("result", resultList);
 		return view;
 	}
-
 }

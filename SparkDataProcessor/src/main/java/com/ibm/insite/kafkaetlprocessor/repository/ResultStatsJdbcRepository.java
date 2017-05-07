@@ -14,11 +14,8 @@ public class ResultStatsJdbcRepository {
 	private JdbcTemplate jdbcTemplate;
 
 	public List<ResultStats> findAll() {
-
 		List<ResultStats> result = jdbcTemplate.query("SELECT * FROM ResultStats",
 				(rs, rowNum) -> new ResultStats(rs.getString("productbrand"), rs.getInt("numberoforders")));
-
 		return result;
-
 	}
 }

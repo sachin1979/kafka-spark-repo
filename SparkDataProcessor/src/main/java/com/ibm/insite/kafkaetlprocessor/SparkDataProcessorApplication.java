@@ -2,15 +2,14 @@ package com.ibm.insite.kafkaetlprocessor;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -31,6 +30,12 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 
 	@Autowired
 	private ResultStatsRepository respository;
+	
+	@Value("${spark.sql.warehouse.dir}")
+	private String SPARK_SQL_WAREHOUSE_DIR;
+	
+	@Value("${hdfs.folder.location}")
+	private String HDFS_FOLDER_LOCATION;
 
 	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
@@ -41,17 +46,19 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 		SpringApplication.run(SparkDataProcessorApplication.class, args);
 	}
 
-	public void run2(String... arg0) throws Exception {
-		System.setProperty("spark.sql.warehouse.dir", "file:///C:/EclipseWorkSpaces/SparkETLProcessorResult/");
+	/**
+	 * This method provides an alternative solution using SPARK SQL for performing the same action.
+	 * @param arg0
+	 * @throws Exception
+	 */
+/*    public void alternativeMethodUnused(String... arg0) throws Exception {
+		System.setProperty("spark.sql.warehouse.dir", SPARK_SQL_WAREHOUSE_DIR);
 
-		final SparkSession sparkSession = SparkSession.builder().appName("Spark SQL Demo").master("local[5]")
+		final SparkSession sparkSession = SparkSession.builder().appName("HDFS ETL Processor").master("local[2]")
 				.getOrCreate();
 
 		while (true) {
-			// Load JSON file data into DataFrame using SparkSession
-			final Dataset<Row> jsonDataFrame = sparkSession.read()
-					.json("file:///C:/EclipseWorkSpaces/KafkaSparkStreamingOutput/*");
-			// Print Schema to see column names, types and other metadata
+			final Dataset<Row> jsonDataFrame = sparkSession.read().json(HDFS_FOLDER_LOCATION);
 			jsonDataFrame.printSchema();
 
 			jsonDataFrame.createOrReplaceTempView("laptop");
@@ -60,19 +67,24 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 
 			Thread.sleep(1000 * 60);
 		}
-	}
+	}*/
 
-	@SuppressWarnings({ "resource", })
+	@SuppressWarnings({ "resource" })
 	@Override
 	public void run(String... arg0) throws Exception {
-		SparkConf conf = new SparkConf().setAppName("IBM_Spark_Streaming_Kafka_Reader").setMaster("local[*]");
+		SparkConf conf = new SparkConf().setAppName("HDFS ETL Processor").setMaster("local[*]");
 		conf.set("spark.streaming.stopGracefullyOnShutdown", "true");
 
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
+		/**
+		 * For POC purpose, I am running this method every minute. In production environment, this will vary.
+		 */
 		while (true) {
-			JavaRDD<String> data = sc.textFile("file:///C:/EclipseWorkSpaces/KafkaSparkStreamingOutput/*");
+			//Extract (E) the data from HDFS
+			JavaRDD<String> data = sc.textFile(HDFS_FOLDER_LOCATION);
 
+			//START: Transform (T) the database read from HDFS
 			JavaRDD<KafkaInputOrderMessage> resultRecords = data.map(line -> {
 				Gson objGson = new Gson();
 				KafkaInputOrderMessage rd = objGson.fromJson(line, KafkaInputOrderMessage.class);
@@ -84,25 +96,27 @@ public class SparkDataProcessorApplication extends SpringBootServletInitializer 
 
 			JavaPairRDD<String, Integer> rddGroupByKeyResult = rddBrandCount.reduceByKey((a, b) -> a + b);
 			Map<String, Integer> resultMap = rddGroupByKeyResult.collectAsMap();
-			System.out.println(resultMap);
+			//END: Transform (T) the database read from HDFS
 
-			Iterator it = resultMap.entrySet().iterator();
+			Iterator<Entry<String, Integer>> it = resultMap.entrySet().iterator();
+			
+			//START: Load (L) the transformed data into destination.
+			//Here I am saving the transformed result into H2 database. This H2 database is queried by the controller.
 			while (it.hasNext()) {
-				Map.Entry pair = (Map.Entry) it.next();
+				Entry<String, Integer> pair = it.next();
 				String key = (String) pair.getKey();
 				Integer value = Integer.parseInt(pair.getValue().toString());
 
 				ResultStats rs = respository.findByProductbrand(key);
 				if (rs != null) {
 					rs.setNumberoforders(value);
-					System.out.println("Found: Updating: " + rs);
 				}
 				else {
 					rs = new ResultStats(key, value);
-					System.out.println("Not Found: Saving: " + rs);
 				}
 				respository.save(rs);
 			}
+			//END: Load (L) the transformed data into destination.
 			
 			Thread.sleep(1000 * 60);
 		}

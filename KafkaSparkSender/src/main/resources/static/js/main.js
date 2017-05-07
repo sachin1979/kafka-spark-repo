@@ -29,21 +29,18 @@ function fire_ajax_submit() {
         cache: false,
         timeout: 600000,
         success: function (data) {
-
-            //var json = "<pre>" + JSON.stringify(data, null, 4) + "</pre>";
-            $('#feedback').html("<h3 style='color: green'>Order has been submitted successfully</h3>");
-
+            $('#feedback').html("<div class='alert alert-success alert-dismissable'>" +
+            		"<a href='#' class='close' data-dismiss='alert' aria-label='close'>x</a>" +
+            		"<strong>Success!</strong>Order has been submitted successfully" +
+            		"</div>");
             $("#btn-order").prop("disabled", false);
-
         },
         error: function (e) {
-
-            //var json = "<pre>" + e.responseText + "</pre>";
-            $('#feedback').html("<h3 style='color: red'>There was some error while submitting the Order. Please try again at later time.</h3>");
-
-            console.log("ERROR : ", e);
+            $('#feedback').html("<div class='alert alert-success alert-dismissable'>" +
+            		"<a href='#' class='close' data-dismiss='alert' aria-label='close'>x</a>" +
+            		"<strong>Failure!</strong>There was some error while submitting the Order. Please try again at later time" +
+            		"</div>");
             $("#btn-order").prop("disabled", false);
-
         }
     });
 }
